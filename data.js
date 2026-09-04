@@ -2,6 +2,7 @@
 
 import { VOCAB_SCRIPTS } from './vocab.js';
 import { OFFICE_SCRIPT } from './office.js';
+import { HOME_SCRIPT } from './home.js';
 
 const VOWEL_HINTS = {
   a: 'Like “ah” in father',
@@ -476,6 +477,7 @@ export const SCRIPTS = {
   },
   ...VOCAB_SCRIPTS,
   ...OFFICE_SCRIPT,
+  ...HOME_SCRIPT,
 };
 
 export function getScript(scriptId) {

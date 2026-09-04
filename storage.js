@@ -17,6 +17,7 @@ function emptyProfile() {
       n4: emptyScript(),
       n3: emptyScript(),
       office: emptyScript(),
+      home: emptyScript(),
     },
     stats: { totalAnswered: 0, totalCorrect: 0 },
   };
@@ -28,7 +29,7 @@ export function loadProfile() {
     if (!raw) return emptyProfile();
     const data = JSON.parse(raw);
     if (!data || data.version !== 1 || !data.scripts) return emptyProfile();
-    const ids = new Set(['hiragana', 'katakana', 'kanji', 'n5', 'n4', 'n3', 'office', ...Object.keys(data.scripts)]);
+    const ids = new Set(['hiragana', 'katakana', 'kanji', 'n5', 'n4', 'n3', 'office', 'home', ...Object.keys(data.scripts)]);
     for (const id of ids) {
       data.scripts[id] = { ...emptyScript(), ...data.scripts[id] };
     }
