@@ -4,7 +4,7 @@ A static site for learning **hiragana**, **katakana**, **kanji**, popular **JLPT
 
 Live site: **https://curuts-developer.github.io/jlpt/**
 
-Stage 0 is for people who have never seen Japanese characters. It teaches the mapping first (あ = a, then later ひ = hi, ふ = fu/hu, へ = he, ほ = ho). After the cards, you tap **A–F** to choose the matching character.
+Stage 0 is for people who have never seen Japanese characters. It teaches the mapping first (あ = a, then later ひ = hi, ふ = fu/hu, へ = he, ほ = ho). After the cards, you tap **A–F** to choose the matching character. Word tracks cover popular **N5 (~180)**, **N4 (~130)**, and **N3 (~130)** vocabulary.
 
 Progress is stored in this browser (`localStorage`). Use **Reset all progress**, or reset one script from its stage list. There is no account and no server.
 
