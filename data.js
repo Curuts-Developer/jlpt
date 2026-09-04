@@ -1,5 +1,7 @@
 /** Staged character data for hiragana, katakana, and popular kanji. */
 
+import { VOCAB_SCRIPTS } from './vocab.js';
+
 const VOWEL_HINTS = {
   a: 'Like “ah” in father',
   i: 'Like “ee” in see',
@@ -30,6 +32,7 @@ export const SCRIPTS = {
     id: 'hiragana',
     label: 'Hiragana',
     kicker: 'Stage 0 first',
+    group: 'writing',
     blurb: 'The rounded phonetic alphabet. Start at Stage 0 if you have never seen these marks.',
     stages: [
       row(
@@ -203,6 +206,7 @@ export const SCRIPTS = {
     id: 'katakana',
     label: 'Katakana',
     kicker: 'Angular twin',
+    group: 'writing',
     blurb: 'Same sounds as hiragana, sharper shapes. Used for loanwords and emphasis.',
     stages: [
       row(
@@ -363,6 +367,7 @@ export const SCRIPTS = {
     id: 'kanji',
     label: 'Kanji',
     kicker: 'Meaning marks',
+    group: 'writing',
     blurb: 'Popular beginner kanji (JLPT N5 style), taught in small meaning groups.',
     stages: [
       row(
@@ -468,6 +473,7 @@ export const SCRIPTS = {
       ]),
     ],
   },
+  ...VOCAB_SCRIPTS,
 };
 
 export function getScript(scriptId) {

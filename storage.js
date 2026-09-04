@@ -13,6 +13,9 @@ function emptyProfile() {
       hiragana: emptyScript(),
       katakana: emptyScript(),
       kanji: emptyScript(),
+      n5: emptyScript(),
+      n4: emptyScript(),
+      n3: emptyScript(),
     },
     stats: { totalAnswered: 0, totalCorrect: 0 },
   };
@@ -24,7 +27,8 @@ export function loadProfile() {
     if (!raw) return emptyProfile();
     const data = JSON.parse(raw);
     if (!data || data.version !== 1 || !data.scripts) return emptyProfile();
-    for (const id of ['hiragana', 'katakana', 'kanji']) {
+    const ids = new Set(['hiragana', 'katakana', 'kanji', 'n5', 'n4', 'n3', ...Object.keys(data.scripts)]);
+    for (const id of ids) {
       data.scripts[id] = { ...emptyScript(), ...data.scripts[id] };
     }
     data.stats = { totalAnswered: 0, totalCorrect: 0, ...data.stats };

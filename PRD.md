@@ -4,7 +4,7 @@
 
 | Field | Value |
 | --- | --- |
-| Product | Staged character quiz with a beginner teach-first Stage 0 |
+| Product | Staged quiz for kana, kanji, and popular JLPT N5–N3 words |
 | Audience | Learners with zero Japanese, then progressing to popular kanji |
 | Hosting | GitHub Pages at https://curuts-developer.github.io/jlpt/ |
 | Persistence | `localStorage` on this browser; reset anytime |

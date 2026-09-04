@@ -108,6 +108,35 @@ h1 {
   gap: 14px;
 }
 
+.home-section {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  margin: 28px 0 10px;
+}
+
+.home-section-lede {
+  margin-bottom: 12px;
+}
+
+.teach-grid.is-vocab {
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+}
+
+.flash-glyph.is-word {
+  font-size: clamp(2.4rem, 10vw, 4.6rem);
+}
+
+.choice.is-vocab {
+  min-height: 96px;
+}
+
+.choice-glyph.is-word {
+  font-size: clamp(1rem, 3.2vw, 1.7rem);
+  line-height: 1.2;
+  word-break: keep-all;
+  text-align: center;
+}
+
 @media (min-width: 800px) {
   .script-grid {
     grid-template-columns: repeat(3, 1fr);

@@ -161,7 +161,8 @@ function stageHref(scriptId, stage) {
 }
 
 function continueLabelFor(scriptId, stage) {
-  if (!isTaught(scriptId, stage.id) && stage.intro) return 'Start Stage 0';
+  const script = getScript(scriptId);
+  if (!isTaught(scriptId, stage.id) && stage.intro) return `Start ${script.label}`;
   if (!isTaught(scriptId, stage.id)) return `Learn · ${stage.title}`;
   return `Continue · ${stage.title}`;
 }
@@ -235,7 +236,19 @@ function pickQuestion(scriptId, stage) {
   return { correct, options };
 }
 
+function isVocab(scriptId) {
+  const script = getScript(scriptId);
+  return Boolean(script && script.kind === 'vocab');
+}
+
 function promptText(item, scriptId) {
+  if (isVocab(scriptId)) {
+    return {
+      eyebrow: 'Which word means',
+      main: item.meaning,
+      sub: item.romaji,
+    };
+  }
   if (scriptId === 'kanji') {
     return {
       eyebrow: 'Which character means',
@@ -307,24 +320,24 @@ function render() {
   bindLearn(script, stage);
 }
 
-function renderHome() {
-  const cards = Object.values(SCRIPTS)
-    .map((script) => {
-      const p = scriptProgress(script.id);
-      return `
-        <button class="script-card" data-script="${script.id}">
-          <span class="kicker">${escapeHtml(script.kicker)}</span>
-          <span class="script-name">${escapeHtml(script.label)}</span>
-          <span class="script-blurb">${escapeHtml(script.blurb)}</span>
-          <span class="meter">
-            <span class="meter-fill" style="width:${p.total ? (p.passed / p.total) * 100 : 0}%"></span>
-          </span>
-          <span class="script-meta">${p.passed} / ${p.total} stages · ${p.mastered} / ${p.charTotal} mastered</span>
-        </button>
-      `;
-    })
-    .join('');
+function scriptCard(script) {
+  const p = scriptProgress(script.id);
+  return `
+    <button class="script-card" data-script="${script.id}">
+      <span class="kicker">${escapeHtml(script.kicker)}</span>
+      <span class="script-name">${escapeHtml(script.label)}</span>
+      <span class="script-blurb">${escapeHtml(script.blurb)}</span>
+      <span class="meter">
+        <span class="meter-fill" style="width:${p.total ? (p.passed / p.total) * 100 : 0}%"></span>
+      </span>
+      <span class="script-meta">${p.passed} / ${p.total} stages · ${p.mastered} / ${p.charTotal} mastered</span>
+    </button>
+  `;
+}
 
+function renderHome() {
+  const writing = Object.values(SCRIPTS).filter((s) => s.group !== 'words');
+  const words = Object.values(SCRIPTS).filter((s) => s.group === 'words');
   const saveNote = canPersist
     ? 'Progress is saved in this browser until you reset it.'
     : 'This browser blocked local saving. You can still practice, but progress will not stick.';
@@ -342,7 +355,11 @@ function renderHome() {
         ${answered ? `<p class="save-note">${answered} ${answered === 1 ? 'answer' : 'answers'} · ${accuracy}% correct</p>` : ''}
       </div>
     </header>
-    <section class="script-grid">${cards}</section>
+    <h2 class="home-section">Characters</h2>
+    <section class="script-grid">${writing.map(scriptCard).join('')}</section>
+    <h2 class="home-section">JLPT words</h2>
+    <p class="lede home-section-lede">Popular vocabulary by level. Same tap quiz: English meaning, then A–F for the Japanese word.</p>
+    <section class="script-grid">${words.map(scriptCard).join('')}</section>
     <footer class="home-foot">
       <p class="save-note">${saveNote}</p>
       <button class="btn ghost danger" id="reset-btn" type="button">Reset all progress</button>
@@ -452,7 +469,7 @@ function renderChart(script) {
       return `
         <section class="chart-block">
           <h2>${escapeHtml(stage.title)}${unlocked ? '' : ' · locked'}</h2>
-          <ul class="teach-grid">${tiles}</ul>
+          <ul class="teach-grid ${script.kind === 'vocab' ? 'is-vocab' : ''}">${tiles}</ul>
         </section>`;
     })
     .join('');
@@ -483,7 +500,7 @@ function renderLearn(script, stage) {
     const tiles = chars
       .map(
         (c) => `
-        <li>
+        <li class="${script.kind === 'vocab' ? 'is-word' : ''}">
           <span class="glyph">${escapeHtml(c.char)}</span>
           <span class="read">${escapeHtml(c.romaji)}</span>
           ${c.meaning ? `<span class="mean">${escapeHtml(c.meaning)}</span>` : ''}
@@ -492,7 +509,7 @@ function renderLearn(script, stage) {
       .join('');
     return `
       ${learnChrome(script, stage, forced)}
-      <ul class="teach-grid">${tiles}</ul>
+      <ul class="teach-grid ${script.kind === 'vocab' ? 'is-vocab' : ''}">${tiles}</ul>
       <div class="learn-actions">
         <button class="btn primary" id="start-practice" type="button">Practice A–F</button>
       </div>
@@ -505,10 +522,10 @@ function renderLearn(script, stage) {
       ${chars
         .map(
           (c, i) => `
-        <article class="flash ${i === 0 ? 'is-on' : ''}" data-card="${i}">
-          ${i === 0 && stage.intro ? `<p class="zero-note">Zero knowledge is expected. This mark is a sound, not an English letter.</p>` : ''}
+        <article class="flash ${i === 0 ? 'is-on' : ''} ${script.kind === 'vocab' ? 'is-vocab' : ''}" data-card="${i}">
+          ${i === 0 && stage.intro ? `<p class="zero-note">${script.kind === 'vocab' ? 'Each card is a real word: writing, sound, and English meaning.' : 'Zero knowledge is expected. This mark is a sound, not an English letter.'}</p>` : ''}
           <p class="flash-kicker">Card ${i + 1} of ${chars.length}</p>
-          <p class="flash-glyph">${escapeHtml(c.char)}</p>
+          <p class="flash-glyph ${script.kind === 'vocab' || c.char.length > 1 ? 'is-word' : ''}">${escapeHtml(c.char)}</p>
           <p class="flash-read">${escapeHtml(c.romaji)}</p>
           ${c.meaning ? `<p class="flash-mean">${escapeHtml(c.meaning)}</p>` : ''}
           ${c.hint ? `<p class="flash-hint">${escapeHtml(c.hint)}</p>` : ''}
@@ -519,7 +536,7 @@ function renderLearn(script, stage) {
     <div class="learn-actions">
       <button class="btn ghost" id="prev-card" type="button" disabled>Back</button>
       ${forced ? '' : '<button class="btn ghost" id="skip-practice" type="button">Practice A–F</button>'}
-      <button class="btn primary" id="next-card" type="button">Next character</button>
+      <button class="btn primary" id="next-card" type="button">${script.kind === 'vocab' ? 'Next word' : 'Next character'}</button>
     </div>
   `;
 }
@@ -563,7 +580,11 @@ function bindLearn(script, stage) {
     });
     prev.disabled = index === 0;
     const last = index >= chars.length - 1;
-    next.textContent = last ? 'Practice A–F' : 'Next character';
+    next.textContent = last
+      ? 'Practice A–F'
+      : script.kind === 'vocab'
+        ? 'Next word'
+        : 'Next character';
   };
 
   prev.addEventListener('click', () => show(Math.max(0, Number(deck.dataset.index) - 1)));
@@ -627,9 +648,9 @@ function renderQuiz(script, stage) {
           ? `<span class="choice-read">${escapeHtml(correct.romaji)}</span>`
           : '';
       return `
-        <button class="choice ${extra}" data-char="${escapeHtml(opt.char)}" ${quiz.locked ? 'disabled' : ''} type="button" aria-label="Option ${label}: ${escapeHtml(opt.char)}">
+        <button class="choice ${extra} ${script.kind === 'vocab' ? 'is-vocab' : ''}" data-char="${escapeHtml(opt.char)}" ${quiz.locked ? 'disabled' : ''} type="button" aria-label="Option ${label}: ${escapeHtml(opt.char)}">
           <span class="choice-key">${label}</span>
-          <span class="choice-glyph">${escapeHtml(opt.char)}</span>
+          <span class="choice-glyph ${script.kind === 'vocab' ? 'is-word' : ''}">${escapeHtml(opt.char)}</span>
           ${reveal}
         </button>
       `;
@@ -639,7 +660,7 @@ function renderQuiz(script, stage) {
   const feedback = quiz.locked
     ? quiz.lastChoice === correct.char
       ? '<p class="feedback ok">Correct</p>'
-      : `<p class="feedback no">The character for <strong>${escapeHtml(prompt.main)}</strong> is ${escapeHtml(correct.char)}</p>`
+      : `<p class="feedback no">The ${script.kind === 'vocab' ? 'word' : 'character'} for <strong>${escapeHtml(prompt.main)}</strong> is ${escapeHtml(correct.char)}</p>`
     : '<p class="feedback">&nbsp;</p>';
 
   const nextBtn =

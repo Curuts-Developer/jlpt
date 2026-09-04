@@ -1,6 +1,6 @@
 # JLPT Curuts
 
-A static site for learning **hiragana**, **katakana**, and popular **kanji**.
+A static site for learning **hiragana**, **katakana**, **kanji**, and popular **JLPT N5 / N4 / N3 words**.
 
 Live site: **https://curuts-developer.github.io/jlpt/**
 
