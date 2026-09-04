@@ -241,7 +241,33 @@ function isVocab(scriptId) {
   return Boolean(script && script.kind === 'vocab');
 }
 
+function isCloze(scriptId) {
+  const script = getScript(scriptId);
+  return Boolean(script && script.kind === 'cloze');
+}
+
+function isWordLike(scriptId) {
+  return isVocab(scriptId) || isCloze(scriptId);
+}
+
+function clozeSentenceHtml(item, filled) {
+  const raw = item.sentence || '';
+  const parts = raw.split('___');
+  if (parts.length === 1) return escapeHtml(raw);
+  const blank = filled
+    ? `<span class="blank is-filled">${escapeHtml(item.char)}</span>`
+    : `<span class="blank" aria-label="blank">____</span>`;
+  return `${escapeHtml(parts[0])}${blank}${escapeHtml(parts.slice(1).join('___'))}`;
+}
+
 function promptText(item, scriptId) {
+  if (isCloze(scriptId)) {
+    return {
+      eyebrow: 'Fill in the blank',
+      main: item.sentenceEn || item.meaning,
+      sub: item.romaji,
+    };
+  }
   if (isVocab(scriptId)) {
     return {
       eyebrow: 'Which word means',
@@ -336,8 +362,9 @@ function scriptCard(script) {
 }
 
 function renderHome() {
-  const writing = Object.values(SCRIPTS).filter((s) => s.group !== 'words');
+  const writing = Object.values(SCRIPTS).filter((s) => s.group === 'writing');
   const words = Object.values(SCRIPTS).filter((s) => s.group === 'words');
+  const special = Object.values(SCRIPTS).filter((s) => s.group === 'special');
   const saveNote = canPersist
     ? 'Progress is saved in this browser until you reset it.'
     : 'This browser blocked local saving. You can still practice, but progress will not stick.';
@@ -360,6 +387,9 @@ function renderHome() {
     <h2 class="home-section">JLPT words</h2>
     <p class="lede home-section-lede">Popular vocabulary by level. Same tap quiz: English meaning, then A–F for the Japanese word.</p>
     <section class="script-grid">${words.map(scriptCard).join('')}</section>
+    <h2 class="home-section">Special</h2>
+    <p class="lede home-section-lede">Office Japanese: learn the word, then fill it into a sentence. Still A–F, no typing.</p>
+    <section class="script-grid">${special.map(scriptCard).join('')}</section>
     <footer class="home-foot">
       <p class="save-note">${saveNote}</p>
       <button class="btn ghost danger" id="reset-btn" type="button">Reset all progress</button>
@@ -469,7 +499,7 @@ function renderChart(script) {
       return `
         <section class="chart-block">
           <h2>${escapeHtml(stage.title)}${unlocked ? '' : ' · locked'}</h2>
-          <ul class="teach-grid ${script.kind === 'vocab' ? 'is-vocab' : ''}">${tiles}</ul>
+          <ul class="teach-grid ${isWordLike(script.id) ? 'is-vocab' : ''}">${tiles}</ul>
         </section>`;
     })
     .join('');
@@ -500,7 +530,7 @@ function renderLearn(script, stage) {
     const tiles = chars
       .map(
         (c) => `
-        <li class="${script.kind === 'vocab' ? 'is-word' : ''}">
+        <li class="${isWordLike(script.id) ? 'is-word' : ''}">
           <span class="glyph">${escapeHtml(c.char)}</span>
           <span class="read">${escapeHtml(c.romaji)}</span>
           ${c.meaning ? `<span class="mean">${escapeHtml(c.meaning)}</span>` : ''}
@@ -509,7 +539,7 @@ function renderLearn(script, stage) {
       .join('');
     return `
       ${learnChrome(script, stage, forced)}
-      <ul class="teach-grid ${script.kind === 'vocab' ? 'is-vocab' : ''}">${tiles}</ul>
+      <ul class="teach-grid ${isWordLike(script.id) ? 'is-vocab' : ''}">${tiles}</ul>
       <div class="learn-actions">
         <button class="btn primary" id="start-practice" type="button">Practice A–F</button>
       </div>
@@ -522,13 +552,15 @@ function renderLearn(script, stage) {
       ${chars
         .map(
           (c, i) => `
-        <article class="flash ${i === 0 ? 'is-on' : ''} ${script.kind === 'vocab' ? 'is-vocab' : ''}" data-card="${i}">
-          ${i === 0 && stage.intro ? `<p class="zero-note">${script.kind === 'vocab' ? 'Each card is a real word: writing, sound, and English meaning.' : 'Zero knowledge is expected. This mark is a sound, not an English letter.'}</p>` : ''}
+        <article class="flash ${i === 0 ? 'is-on' : ''} ${isWordLike(script.id) ? 'is-vocab' : ''}" data-card="${i}">
+          ${i === 0 && stage.intro ? `<p class="zero-note">${isCloze(script.id) ? 'Read the office sentence. The missing word is highlighted. Then you will fill the blank with A–F.' : isVocab(script.id) ? 'Each card is a real word: writing, sound, and English meaning.' : 'Zero knowledge is expected. This mark is a sound, not an English letter.'}</p>` : ''}
           <p class="flash-kicker">Card ${i + 1} of ${chars.length}</p>
-          <p class="flash-glyph ${script.kind === 'vocab' || c.char.length > 1 ? 'is-word' : ''}">${escapeHtml(c.char)}</p>
+          <p class="flash-glyph ${isWordLike(script.id) || c.char.length > 1 ? 'is-word' : ''}">${escapeHtml(c.char)}</p>
           <p class="flash-read">${escapeHtml(c.romaji)}</p>
           ${c.meaning ? `<p class="flash-mean">${escapeHtml(c.meaning)}</p>` : ''}
           ${c.hint ? `<p class="flash-hint">${escapeHtml(c.hint)}</p>` : ''}
+          ${c.sentence ? `<p class="flash-sentence">${clozeSentenceHtml(c, true)}</p>` : ''}
+          ${c.sentenceEn ? `<p class="flash-hint">${escapeHtml(c.sentenceEn)}</p>` : ''}
         </article>`
         )
         .join('')}
@@ -536,7 +568,7 @@ function renderLearn(script, stage) {
     <div class="learn-actions">
       <button class="btn ghost" id="prev-card" type="button" disabled>Back</button>
       ${forced ? '' : '<button class="btn ghost" id="skip-practice" type="button">Practice A–F</button>'}
-      <button class="btn primary" id="next-card" type="button">${script.kind === 'vocab' ? 'Next word' : 'Next character'}</button>
+      <button class="btn primary" id="next-card" type="button">${isWordLike(script.id) ? 'Next word' : 'Next character'}</button>
     </div>
   `;
 }
@@ -582,7 +614,7 @@ function bindLearn(script, stage) {
     const last = index >= chars.length - 1;
     next.textContent = last
       ? 'Practice A–F'
-      : script.kind === 'vocab'
+      : isWordLike(script.id)
         ? 'Next word'
         : 'Next character';
   };
@@ -648,9 +680,9 @@ function renderQuiz(script, stage) {
           ? `<span class="choice-read">${escapeHtml(correct.romaji)}</span>`
           : '';
       return `
-        <button class="choice ${extra} ${script.kind === 'vocab' ? 'is-vocab' : ''}" data-char="${escapeHtml(opt.char)}" ${quiz.locked ? 'disabled' : ''} type="button" aria-label="Option ${label}: ${escapeHtml(opt.char)}">
+        <button class="choice ${extra} ${isWordLike(script.id) ? 'is-vocab' : ''}" data-char="${escapeHtml(opt.char)}" ${quiz.locked ? 'disabled' : ''} type="button" aria-label="Option ${label}: ${escapeHtml(opt.char)}">
           <span class="choice-key">${label}</span>
-          <span class="choice-glyph ${script.kind === 'vocab' ? 'is-word' : ''}">${escapeHtml(opt.char)}</span>
+          <span class="choice-glyph ${isWordLike(script.id) ? 'is-word' : ''}">${escapeHtml(opt.char)}</span>
           ${reveal}
         </button>
       `;
@@ -660,7 +692,7 @@ function renderQuiz(script, stage) {
   const feedback = quiz.locked
     ? quiz.lastChoice === correct.char
       ? '<p class="feedback ok">Correct</p>'
-      : `<p class="feedback no">The ${script.kind === 'vocab' ? 'word' : 'character'} for <strong>${escapeHtml(prompt.main)}</strong> is ${escapeHtml(correct.char)}</p>`
+      : `<p class="feedback no">${isCloze(script.id) ? `The missing word is ${escapeHtml(correct.char)}` : `The ${isVocab(script.id) ? 'word' : 'character'} for <strong>${escapeHtml(prompt.main)}</strong> is ${escapeHtml(correct.char)}`}</p>`
     : '<p class="feedback">&nbsp;</p>';
 
   const nextBtn =
@@ -678,10 +710,16 @@ function renderQuiz(script, stage) {
         <p class="prompt-sub">${escapeHtml(weakLine)}</p>
       </div>
     </header>
-    <section class="prompt">
+    <section class="prompt ${isCloze(script.id) ? 'is-cloze' : ''}">
       <p class="eyebrow">${escapeHtml(prompt.eyebrow)}</p>
-      <p class="prompt-main">${escapeHtml(prompt.main)}</p>
-      <p class="prompt-sub">${escapeHtml(prompt.sub)}</p>
+      ${
+        isCloze(script.id)
+          ? `<p class="cloze-sentence">${clozeSentenceHtml(correct, Boolean(quiz.locked))}</p>
+             <p class="prompt-sub">${escapeHtml(correct.sentenceEn || '')}</p>
+             ${quiz.locked ? `<p class="prompt-sub">${escapeHtml(correct.romaji)} · ${escapeHtml(correct.meaning)}</p>` : ''}`
+          : `<p class="prompt-main">${escapeHtml(prompt.main)}</p>
+             <p class="prompt-sub">${escapeHtml(prompt.sub)}</p>`
+      }
     </section>
     <section class="choices">${tiles}</section>
     ${feedback}
