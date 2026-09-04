@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <script>
+      (function () {
+        if (location.hostname !== "curuts-developer.github.io") return;
+        if (location.pathname === "/jlpt") {
+          location.replace("/jlpt/" + location.search + location.hash);
+          return;
+        }
+        var base = document.createElement("base");
+        base.href = "/jlpt/";
+        document.head.appendChild(base);
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JLPT Curuts — hiragana, katakana, kanji</title>
+    <meta
+      name="description"
+      content="Stage 0 teaches Japanese characters from zero. Then practice with A–F boxes. Progress stays in this browser."
+    />
+    <link rel="canonical" href="https://curuts-developer.github.io/jlpt/" />
+    <meta name="theme-color" content="#c4452c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="JLPT Curuts" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main id="app"></main>
+    <noscript>This drill needs JavaScript. Open it over http (GitHub Pages or a local static server), not as a raw file.</noscript>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

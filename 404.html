@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>JLPT Curuts</title>
+    <script>
+      (function () {
+        var host = location.hostname;
+        if (host === "curuts-developer.github.io") {
+          location.replace("/jlpt/" + location.hash);
+          return;
+        }
+        if (host.endsWith(".github.io")) {
+          var repo = location.pathname.split("/").filter(Boolean)[0] || "jlpt";
+          location.replace("/" + repo + "/");
+          return;
+        }
+        location.replace("./");
+      })();
+    </script>
+  </head>
+  <body>
+    <p><a href="./">Back to the drill</a></p>
+  </body>
+</html>
