@@ -4,7 +4,7 @@
 
 | Field | Value |
 | --- | --- |
-| Product | Staged character quiz with a beginner teach-first Stage 0 |
+| Product | Staged quiz for kana, kanji, and popular JLPT N5–N3 words |
 | Audience | Learners with zero Japanese, then progressing to popular kanji |
 | Hosting | GitHub Pages at https://curuts-developer.github.io/jlpt/ |
 | Persistence | `localStorage` on this browser; reset anytime |
@@ -21,7 +21,7 @@ A complete beginner cannot start with a quiz. They have never seen あ or か. T
 ## 2. Goals
 
 1. **Stage 0** is a zero-knowledge lesson: show each character, its reading, and a spoken-English hint before any test.
-2. After Stage 0, continue through **all hiragana**, **all katakana**, and **popular kanji** in difficulty stages.
+2. After Stage 0, continue through **all hiragana**, **all katakana**, **popular kanji**, and **JLPT N5 / N4 / N3 words** in difficulty stages.
 3. Practice is **six tap targets labeled A–F** (one correct character).
 4. Progress is saved in the browser and can be **reset** with one confirmed action.
 5. Ship as a static site on GitHub Pages.
