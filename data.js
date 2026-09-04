@@ -1,6 +1,7 @@
 /** Staged character data for hiragana, katakana, and popular kanji. */
 
 import { VOCAB_SCRIPTS } from './vocab.js';
+import { OFFICE_SCRIPT } from './office.js';
 
 const VOWEL_HINTS = {
   a: 'Like “ah” in father',
@@ -474,6 +475,7 @@ export const SCRIPTS = {
     ],
   },
   ...VOCAB_SCRIPTS,
+  ...OFFICE_SCRIPT,
 };
 
 export function getScript(scriptId) {

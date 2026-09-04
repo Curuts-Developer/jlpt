@@ -371,9 +371,36 @@ h1 {
   font-weight: 700;
 }
 
-.flash-mean,
-.flash-hint {
-  margin: 6px 0 0;
+.flash-sentence,
+.cloze-sentence {
+  font-family: var(--serif);
+  font-size: clamp(1.35rem, 4.5vw, 2rem);
+  line-height: 1.5;
+  margin: 14px 0 0;
+}
+
+.cloze-sentence {
+  margin: 8px 0 10px;
+}
+
+.blank {
+  display: inline-block;
+  min-width: 3.2em;
+  padding: 0 8px;
+  margin: 0 2px;
+  border-bottom: 3px solid var(--vermillion);
+  color: var(--vermillion-deep);
+  font-weight: 700;
+  text-align: center;
+}
+
+.blank.is-filled {
+  border-bottom-color: var(--moss);
+  color: var(--moss);
+}
+
+.prompt.is-cloze .prompt-main {
+  font-size: 1rem;
 }
 
 .teach-grid {
