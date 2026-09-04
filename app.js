@@ -145,16 +145,32 @@ function scriptProgress(scriptId) {
   return { passed, total: realStages.length, mastered, charTotal: chars.length };
 }
 
-function hasAnyProgress() {
-  if (profile.stats.totalAnswered > 0) return true;
-  return Object.values(profile.scripts).some(
-    (s) => s.taughtStageIds.length || s.passedStageIds.length || Object.keys(s.mastery).length
-  );
+function liveStats() {
+  let answered = 0;
+  let correct = 0;
+  for (const script of Object.values(profile.scripts)) {
+    answered += script.answered || 0;
+    correct += script.correct || 0;
+  }
+  return { answered, correct };
 }
 
 function stageHref(scriptId, stage) {
   if (!isTaught(scriptId, stage.id)) return `/${scriptId}/${stage.id}/learn`;
   return `/${scriptId}/${stage.id}/quiz`;
+}
+
+function hasAnyProgress() {
+  if (liveStats().answered > 0) return true;
+  return Object.values(profile.scripts).some(
+    (s) => s.taughtStageIds.length || s.passedStageIds.length || Object.keys(s.mastery).length
+  );
+}
+
+function continueLabelFor(scriptId, stage) {
+  if (!isTaught(scriptId, stage.id) && stage.intro) return 'Start Stage 0';
+  if (!isTaught(scriptId, stage.id)) return `Learn · ${stage.title}`;
+  return `Continue · ${stage.title}`;
 }
 
 function continueInScript(scriptId) {
@@ -182,7 +198,7 @@ function continueInfo() {
       const path = isTaught(script.id, stage.id)
         ? `/${script.id}/${stage.id}/quiz`
         : `/${script.id}/${stage.id}/learn`;
-      return { path, label: `Continue · ${stage.title}` };
+      return { path, label: continueLabelFor(script.id, stage) };
     }
   }
   for (const script of Object.values(SCRIPTS)) {
@@ -191,8 +207,7 @@ function continueInfo() {
         const path = isTaught(script.id, stage.id)
           ? `/${script.id}/${stage.id}/quiz`
           : `/${script.id}/${stage.id}/learn`;
-        const label = hasAnyProgress() ? `Continue · ${stage.title}` : 'Start Stage 0';
-        return { path, label };
+        return { path, label: continueLabelFor(script.id, stage) };
       }
     }
   }
@@ -321,8 +336,8 @@ function renderHome() {
     ? 'Progress is saved in this browser until you reset it.'
     : 'This browser blocked local saving. You can still practice, but progress will not stick.';
   const info = continueInfo();
-  const answered = profile.stats.totalAnswered;
-  const accuracy = answered ? Math.round((profile.stats.totalCorrect / answered) * 100) : 0;
+  const { answered, correct } = liveStats();
+  const accuracy = answered ? Math.round((correct / answered) * 100) : 0;
 
   return `
     <header class="top">
@@ -680,6 +695,9 @@ function answer(script, stage, chosen) {
   quiz.locked = true;
   quiz.lastChoice = chosen;
   bumpMastery(script.id, correct.char, ok ? 1 : -1);
+  const st = scriptState(script.id);
+  st.answered = (st.answered || 0) + 1;
+  if (ok) st.correct = (st.correct || 0) + 1;
   profile.stats.totalAnswered += 1;
   if (ok) profile.stats.totalCorrect += 1;
   quiz.mixSession.answered += 1;

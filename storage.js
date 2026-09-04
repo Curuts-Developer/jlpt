@@ -1,7 +1,7 @@
 const KEY = 'jlpt-progress-v1';
 
 function emptyScript() {
-  return { passedStageIds: [], taughtStageIds: [], mastery: {} };
+  return { passedStageIds: [], taughtStageIds: [], mastery: {}, answered: 0, correct: 0 };
 }
 
 function emptyProfile() {
@@ -52,6 +52,9 @@ export function resetProfile() {
 
 export function resetScriptProgress(profile, scriptId) {
   profile.scripts[scriptId] = emptyScript();
+  const last = (profile.lastPath || '').replace(/^#/, '');
+  const owner = last.split('/').filter(Boolean)[0];
+  if (owner === scriptId) profile.lastPath = '#/';
   return profile;
 }
 
