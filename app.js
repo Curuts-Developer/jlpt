@@ -160,13 +160,6 @@ function stageHref(scriptId, stage) {
   return `/${scriptId}/${stage.id}/quiz`;
 }
 
-function hasAnyProgress() {
-  if (liveStats().answered > 0) return true;
-  return Object.values(profile.scripts).some(
-    (s) => s.taughtStageIds.length || s.passedStageIds.length || Object.keys(s.mastery).length
-  );
-}
-
 function continueLabelFor(scriptId, stage) {
   if (!isTaught(scriptId, stage.id) && stage.intro) return 'Start Stage 0';
   if (!isTaught(scriptId, stage.id)) return `Learn · ${stage.title}`;
@@ -346,7 +339,7 @@ function renderHome() {
       <p class="lede">Stage 0 is for zero Japanese. See あ = a, then ひ = hi, ふ = fu / hu, へ = he, ほ = ho in later rows. Practice is six boxes: A B C D E F.</p>
       <div class="continue-row">
         <button class="btn primary" id="continue-btn" type="button">${escapeHtml(info.label)}</button>
-        ${answered ? `<p class="save-note">${answered} answers · ${accuracy}% correct</p>` : ''}
+        ${answered ? `<p class="save-note">${answered} ${answered === 1 ? 'answer' : 'answers'} · ${accuracy}% correct</p>` : ''}
       </div>
     </header>
     <section class="script-grid">${cards}</section>
