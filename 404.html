@@ -6,8 +6,8 @@
     <script>
       (function () {
         var host = location.hostname;
-        if (host === "jlpt-curuts.github.io") {
-          location.replace("/");
+        if (host === "curuts-developer.github.io") {
+          location.replace("/jlpt/" + location.hash);
           return;
         }
         if (host.endsWith(".github.io")) {

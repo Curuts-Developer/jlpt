@@ -2,12 +2,25 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <script>
+      (function () {
+        if (location.hostname !== "curuts-developer.github.io") return;
+        if (location.pathname === "/jlpt") {
+          location.replace("/jlpt/" + location.search + location.hash);
+          return;
+        }
+        var base = document.createElement("base");
+        base.href = "/jlpt/";
+        document.head.appendChild(base);
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>JLPT Curuts — hiragana, katakana, kanji</title>
     <meta
       name="description"
       content="Stage 0 teaches Japanese characters from zero. Then practice with A–F boxes. Progress stays in this browser."
     />
+    <link rel="canonical" href="https://curuts-developer.github.io/jlpt/" />
     <meta name="theme-color" content="#c4452c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="JLPT Curuts" />
