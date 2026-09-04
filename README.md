@@ -1,6 +1,6 @@
 # JLPT Curuts
 
-A static site for learning **hiragana**, **katakana**, **kanji**, popular **JLPT N5 / N4 / N3 words**, and **office Japanese** (fill the word into a sentence).
+A static site for learning **hiragana**, **katakana**, **kanji**, popular **JLPT N5 / N4 / N3 words**, plus **Office** and **Home** (friends and neighbors) sentence fill-ins.
 
 Live site: **https://curuts-developer.github.io/jlpt/**
 

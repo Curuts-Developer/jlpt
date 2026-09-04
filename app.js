@@ -388,7 +388,7 @@ function renderHome() {
     <p class="lede home-section-lede">Popular vocabulary by level. Same tap quiz: English meaning, then A–F for the Japanese word.</p>
     <section class="script-grid">${words.map(scriptCard).join('')}</section>
     <h2 class="home-section">Special</h2>
-    <p class="lede home-section-lede">Office Japanese: learn the word, then fill it into a sentence. Still A–F, no typing.</p>
+    <p class="lede home-section-lede">Office and Home (friends and neighbors). Learn the word, then fill it into a sentence. Still A–F, no typing.</p>
     <section class="script-grid">${special.map(scriptCard).join('')}</section>
     <footer class="home-foot">
       <p class="save-note">${saveNote}</p>
@@ -553,7 +553,7 @@ function renderLearn(script, stage) {
         .map(
           (c, i) => `
         <article class="flash ${i === 0 ? 'is-on' : ''} ${isWordLike(script.id) ? 'is-vocab' : ''}" data-card="${i}">
-          ${i === 0 && stage.intro ? `<p class="zero-note">${isCloze(script.id) ? 'Read the office sentence. The missing word is highlighted. Then you will fill the blank with A–F.' : isVocab(script.id) ? 'Each card is a real word: writing, sound, and English meaning.' : 'Zero knowledge is expected. This mark is a sound, not an English letter.'}</p>` : ''}
+          ${i === 0 && stage.intro ? `<p class="zero-note">${isCloze(script.id) ? 'Read the sentence. The missing word is highlighted. Then you will fill the blank with A–F.' : isVocab(script.id) ? 'Each card is a real word: writing, sound, and English meaning.' : 'Zero knowledge is expected. This mark is a sound, not an English letter.'}</p>` : ''}
           <p class="flash-kicker">Card ${i + 1} of ${chars.length}</p>
           <p class="flash-glyph ${isWordLike(script.id) || c.char.length > 1 ? 'is-word' : ''}">${escapeHtml(c.char)}</p>
           <p class="flash-read">${escapeHtml(c.romaji)}</p>
