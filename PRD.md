@@ -6,7 +6,7 @@
 | --- | --- |
 | Product | Staged character quiz with a beginner teach-first Stage 0 |
 | Audience | Learners with zero Japanese, then progressing to popular kanji |
-| Hosting | GitHub Pages (static files, no server) |
+| Hosting | GitHub Pages at https://jlpt-curuts.github.io (after repo rename/transfer) |
 | Persistence | `localStorage` on this browser; reset anytime |
 | Primary interaction | Learn cards, then tap A–F for the matching character |
 
@@ -96,10 +96,12 @@ Themed JLPT N5-style batches (numbers, nature, school, body/food, directions, re
 
 Key: `jlpt-progress-v1` in `localStorage` (survives refresh and tab close; still no server).
 
-Reset on the home screen clears that key after confirmation.
+Reset on the home screen clears that key after confirmation. Each script also has its own reset on the stage list. A **Continue** button resumes the last unfinished stage. A **character chart** shows mastery per glyph.
 
 ---
 
 ## 7. Tech
 
-Vanilla HTML, CSS, and ES modules. Character lists in `data.js`. Relative URLs so `https://<user>.github.io/jlpt/` works. No build step required.
+Vanilla HTML, CSS, and ES modules. Character lists in `data.js`. Relative URLs. No build step.
+
+Public site target: **https://jlpt-curuts.github.io** via a GitHub user/org named `jlpt-curuts` and a repository named `jlpt-curuts.github.io`. GitHub Actions deploys `main` to Pages.

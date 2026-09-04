@@ -76,13 +76,13 @@ export const SCRIPTS = {
       row(
         'h-h',
         'Stage 5 · H row',
-        'はひふへほ — ふ is fu (also written hu).',
+        'は = ha, ひ = hi, ふ = fu / hu, へ = he, ほ = ho.',
         [
-          ['は', 'ha'],
-          ['ひ', 'hi'],
+          ['は', 'ha', 'Like “ha” in hop'],
+          ['ひ', 'hi', 'Like “hee”'],
           ['ふ', 'fu', 'Also written hu — a soft “fu”'],
-          ['へ', 'he'],
-          ['ほ', 'ho'],
+          ['へ', 'he', 'Like “he” in help'],
+          ['ほ', 'ho', 'Like “ho” in home'],
         ]
       ),
       row('h-m', 'Stage 6 · M row', 'まみむめも', [
@@ -246,12 +246,12 @@ export const SCRIPTS = {
         ['ネ', 'ne'],
         ['ノ', 'no'],
       ]),
-      row('k-h', 'Stage 5 · H row', 'ハヒフヘホ — フ is fu / hu.', [
-        ['ハ', 'ha'],
-        ['ヒ', 'hi'],
+      row('k-h', 'Stage 5 · H row', 'ハ = ha, ヒ = hi, フ = fu / hu, ヘ = he, ホ = ho.', [
+        ['ハ', 'ha', 'Like “ha” in hop'],
+        ['ヒ', 'hi', 'Like “hee”'],
         ['フ', 'fu', 'Also written hu'],
-        ['ヘ', 'he'],
-        ['ホ', 'ho'],
+        ['ヘ', 'he', 'Like “he” in help'],
+        ['ホ', 'ho', 'Like “ho” in home'],
       ]),
       row('k-m', 'Stage 6 · M row', 'マミムメモ', [
         ['マ', 'ma'],

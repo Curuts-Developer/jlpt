@@ -84,6 +84,25 @@ h1 {
   margin-bottom: 28px;
 }
 
+.continue-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.stage-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -8px 0 18px;
+}
+
+.stage-row.is-current {
+  box-shadow: 0 0 0 2px rgba(196, 69, 44, 0.35);
+}
+
 .script-grid {
   display: grid;
   gap: 14px;
@@ -102,6 +121,7 @@ h1 {
   font: inherit;
   color: inherit;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .script-card {
@@ -357,6 +377,57 @@ h1 {
 .teach-grid .mean {
   font-size: 0.78rem;
   color: var(--ink-soft);
+}
+
+.teach-grid li.is-mastered {
+  border-color: rgba(44, 106, 74, 0.45);
+  background: #eef6f0;
+}
+
+.teach-grid li.is-dim {
+  opacity: 0.45;
+}
+
+.pip-row {
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  color: var(--moss);
+}
+
+.chart-block {
+  margin-bottom: 22px;
+}
+
+.chart-block h2 {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  margin: 0 0 10px;
+}
+
+.pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 0 0;
+}
+
+.pip {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(27, 21, 16, 0.18);
+}
+
+.pip.is-on {
+  background: var(--moss);
+}
+
+.choice-read {
+  align-self: center;
+  font-size: 0.8rem;
+  color: var(--moss);
+  font-weight: 700;
+  margin-bottom: 6px;
 }
 
 .learn-actions {

@@ -1,5 +1,11 @@
 import { SCRIPTS, getScript, allCharsInScript } from './data.js';
-import { loadProfile, saveProfile, resetProfile, storageAvailable } from './storage.js';
+import {
+  loadProfile,
+  saveProfile,
+  resetProfile,
+  resetScriptProgress,
+  storageAvailable,
+} from './storage.js';
 
 const MASTER_PASS = 2;
 const MIX_GOAL = 12;
@@ -10,6 +16,7 @@ const LABELS = ['A', 'B', 'C', 'D', 'E', 'F'];
 let profile = loadProfile();
 let canPersist = storageAvailable();
 let quiz = null;
+let quizTimer = 0;
 
 const app = document.getElementById('app');
 
@@ -20,6 +27,7 @@ function parseHash() {
   const scriptId = parts[0];
   if (!getScript(scriptId)) return { view: 'home' };
   if (parts.length === 1) return { view: 'stages', scriptId };
+  if (parts[1] === 'chart') return { view: 'chart', scriptId };
   const stageId = parts[1];
   const mode = parts[2] || 'learn';
   return { view: mode === 'quiz' || mode === 'done' ? mode : 'learn', scriptId, stageId };
@@ -27,6 +35,14 @@ function parseHash() {
 
 function go(path) {
   location.hash = path;
+}
+
+function rememberRoute() {
+  const h = location.hash || '#/';
+  if (h === '#' || h === '#/' || h === '') return;
+  if (profile.lastPath === h) return;
+  profile.lastPath = h;
+  persist();
 }
 
 function scriptState(scriptId) {
@@ -129,6 +145,60 @@ function scriptProgress(scriptId) {
   return { passed, total: realStages.length, mastered, charTotal: chars.length };
 }
 
+function hasAnyProgress() {
+  if (profile.stats.totalAnswered > 0) return true;
+  return Object.values(profile.scripts).some(
+    (s) => s.taughtStageIds.length || s.passedStageIds.length || Object.keys(s.mastery).length
+  );
+}
+
+function stageHref(scriptId, stage) {
+  if (!isTaught(scriptId, stage.id)) return `/${scriptId}/${stage.id}/learn`;
+  return `/${scriptId}/${stage.id}/quiz`;
+}
+
+function continueInScript(scriptId) {
+  const script = getScript(scriptId);
+  for (const stage of script.stages) {
+    if (isUnlocked(scriptId, stage.id) && !isPassed(scriptId, stage.id)) {
+      return isTaught(scriptId, stage.id)
+        ? `/${scriptId}/${stage.id}/quiz`
+        : `/${scriptId}/${stage.id}/learn`;
+    }
+  }
+  return `/${scriptId}`;
+}
+
+function continueInfo() {
+  const last = (profile.lastPath || '').replace(/^#/, '');
+  const lastParts = last.split('/').filter(Boolean);
+  if (lastParts[0] && getScript(lastParts[0])) {
+    const script = getScript(lastParts[0]);
+    if (lastParts[1] === 'chart') {
+      return { path: `/${script.id}/chart`, label: `${script.label} chart` };
+    }
+    const stage = script.stages.find((s) => s.id === lastParts[1]);
+    if (stage && isUnlocked(script.id, stage.id) && !isPassed(script.id, stage.id)) {
+      const path = isTaught(script.id, stage.id)
+        ? `/${script.id}/${stage.id}/quiz`
+        : `/${script.id}/${stage.id}/learn`;
+      return { path, label: `Continue · ${stage.title}` };
+    }
+  }
+  for (const script of Object.values(SCRIPTS)) {
+    for (const stage of script.stages) {
+      if (isUnlocked(script.id, stage.id) && !isPassed(script.id, stage.id)) {
+        const path = isTaught(script.id, stage.id)
+          ? `/${script.id}/${stage.id}/quiz`
+          : `/${script.id}/${stage.id}/learn`;
+        const label = hasAnyProgress() ? `Continue · ${stage.title}` : 'Start Stage 0';
+        return { path, label };
+      }
+    }
+  }
+  return { path: '/hiragana', label: 'Open hiragana' };
+}
+
 function shuffle(list) {
   const copy = [...list];
   for (let i = copy.length - 1; i > 0; i -= 1) {
@@ -146,11 +216,12 @@ function pickQuestion(scriptId, stage) {
     for (let i = 0; i < weight; i += 1) weighted.push(item);
   }
   const correct = weighted[Math.floor(Math.random() * weighted.length)];
-  const pool = uniqueChars([
-    ...chars,
-    ...allCharsInScript(scriptId, stageIndex(scriptId, stage.id)),
-    ...allCharsInScript(scriptId),
-  ]).filter((c) => c.char !== correct.char);
+  const idx = stageIndex(scriptId, stage.id);
+  const nearby = uniqueChars(allCharsInScript(scriptId, Number.isFinite(idx) ? idx : 0)).filter(
+    (c) => c.char !== correct.char
+  );
+  const rest = uniqueChars(allCharsInScript(scriptId)).filter((c) => c.char !== correct.char);
+  const pool = nearby.length >= OPTION_COUNT - 1 ? nearby : uniqueChars([...nearby, ...rest]);
   const distractors = shuffle(pool).slice(0, OPTION_COUNT - 1);
   const options = shuffle([correct, ...distractors]);
   return { correct, options };
@@ -181,6 +252,7 @@ function escapeHtml(value) {
 
 function render() {
   const route = parseHash();
+  if (route.view !== 'home') rememberRoute();
   if (route.view === 'home') {
     app.innerHTML = renderHome();
     bindHome();
@@ -194,6 +266,11 @@ function render() {
   if (route.view === 'stages') {
     app.innerHTML = renderStages(script);
     bindStages(script);
+    return;
+  }
+  if (route.view === 'chart') {
+    app.innerHTML = renderChart(script);
+    bindChart(script);
     return;
   }
   const stage = script.stages.find((s) => s.id === route.stageId);
@@ -243,12 +320,19 @@ function renderHome() {
   const saveNote = canPersist
     ? 'Progress is saved in this browser until you reset it.'
     : 'This browser blocked local saving. You can still practice, but progress will not stick.';
+  const info = continueInfo();
+  const answered = profile.stats.totalAnswered;
+  const accuracy = answered ? Math.round((profile.stats.totalCorrect / answered) * 100) : 0;
 
   return `
     <header class="top">
-      <p class="brand">JLPT drill</p>
+      <p class="brand">JLPT Curuts</p>
       <h1>Learn the marks before you test them.</h1>
       <p class="lede">Stage 0 is for zero Japanese. See あ = a, then ひ = hi, ふ = fu / hu, へ = he, ほ = ho in later rows. Practice is six boxes: A B C D E F.</p>
+      <div class="continue-row">
+        <button class="btn primary" id="continue-btn" type="button">${escapeHtml(info.label)}</button>
+        ${answered ? `<p class="save-note">${answered} answers · ${accuracy}% correct</p>` : ''}
+      </div>
     </header>
     <section class="script-grid">${cards}</section>
     <footer class="home-foot">
@@ -262,6 +346,7 @@ function bindHome() {
   app.querySelectorAll('[data-script]').forEach((btn) => {
     btn.addEventListener('click', () => go(`/${btn.dataset.script}`));
   });
+  app.querySelector('#continue-btn').addEventListener('click', () => go(continueInfo().path));
   app.querySelector('#reset-btn').addEventListener('click', () => {
     const ok = window.confirm('Erase all saved progress on this device? Stage 0 will start over.');
     if (!ok) return;
@@ -273,16 +358,18 @@ function bindHome() {
 
 function renderStages(script) {
   const p = scriptProgress(script.id);
+  const currentPath = continueInScript(script.id);
   const items = script.stages
     .map((stage, index) => {
       const unlocked = isUnlocked(script.id, stage.id);
       const passed = isPassed(script.id, stage.id);
       const chars = stageChars(script.id, stage);
       const mastered = stage.mix ? null : stageMasteredCount(script.id, stage);
-      const status = passed ? 'Passed' : unlocked ? (index === 0 ? 'Start here' : 'Unlocked') : 'Locked';
+      const current = currentPath.includes(`/${stage.id}/`);
+      const status = passed ? 'Passed' : unlocked ? (index === 0 ? 'Start here' : current ? 'Continue' : 'Unlocked') : 'Locked';
       const count = stage.mix ? `${chars.length} review` : `${mastered} / ${chars.length} mastered`;
       return `
-        <button class="stage-row ${unlocked ? '' : 'is-locked'} ${passed ? 'is-passed' : ''} ${stage.intro ? 'is-zero' : ''}"
+        <button class="stage-row ${unlocked ? '' : 'is-locked'} ${passed ? 'is-passed' : ''} ${stage.intro ? 'is-zero' : ''} ${current && !passed ? 'is-current' : ''}"
           data-stage="${stage.id}" ${unlocked ? '' : 'disabled'}>
           <span class="stage-index">${stage.intro ? '0' : index}</span>
           <span class="stage-copy">
@@ -307,21 +394,76 @@ function renderStages(script) {
         <p class="lede">${escapeHtml(script.blurb)} ${p.passed} of ${p.total} core stages passed.</p>
       </div>
     </header>
+    <div class="stage-tools">
+      <button class="btn primary" data-continue type="button">Continue</button>
+      <button class="btn ghost" data-chart type="button">Character chart</button>
+      <button class="btn ghost danger" data-reset-script type="button">Reset ${escapeHtml(script.label)}</button>
+    </div>
     <section class="stage-list">${items}</section>
   `;
 }
 
 function bindStages(script) {
   app.querySelector('[data-back]').addEventListener('click', () => go('/'));
+  app.querySelector('[data-continue]').addEventListener('click', () => go(continueInScript(script.id)));
+  app.querySelector('[data-chart]').addEventListener('click', () => go(`/${script.id}/chart`));
+  app.querySelector('[data-reset-script]').addEventListener('click', () => {
+    const ok = window.confirm(`Erase ${script.label} progress on this device? Other scripts stay.`);
+    if (!ok) return;
+    resetScriptProgress(profile, script.id);
+    quiz = null;
+    persist();
+    render();
+  });
   app.querySelectorAll('[data-stage]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const stage = script.stages.find((s) => s.id === btn.dataset.stage);
-      const path = isTaught(script.id, stage.id) && isPassed(script.id, stage.id)
-        ? `/${script.id}/${stage.id}/quiz`
-        : `/${script.id}/${stage.id}/learn`;
-      go(path);
+      go(stageHref(script.id, stage));
     });
   });
+}
+
+function renderChart(script) {
+  const sections = script.stages
+    .filter((stage) => !stage.mix)
+    .map((stage) => {
+      const unlocked = isUnlocked(script.id, stage.id);
+      const tiles = stage.chars
+        .map((c) => {
+          const m = masteryOf(script.id, c.char);
+          const mastered = m >= MASTER_PASS;
+          return `
+            <li class="${mastered ? 'is-mastered' : ''} ${unlocked ? '' : 'is-dim'}">
+              <span class="glyph">${escapeHtml(c.char)}</span>
+              <span class="read">${escapeHtml(c.romaji)}</span>
+              ${c.meaning ? `<span class="mean">${escapeHtml(c.meaning)}</span>` : ''}
+              <span class="pip-row" aria-label="mastery ${m} of 5">${'●'.repeat(m)}${'○'.repeat(5 - m)}</span>
+            </li>`;
+        })
+        .join('');
+      return `
+        <section class="chart-block">
+          <h2>${escapeHtml(stage.title)}${unlocked ? '' : ' · locked'}</h2>
+          <ul class="teach-grid">${tiles}</ul>
+        </section>`;
+    })
+    .join('');
+
+  return `
+    <header class="subhead">
+      <button class="btn ghost" data-back type="button">Stages</button>
+      <div>
+        <p class="brand">${escapeHtml(script.label)}</p>
+        <h1>Character chart</h1>
+        <p class="lede">Filled marks are mastered. Locked stages are dimmed until you pass the one before.</p>
+      </div>
+    </header>
+    ${sections}
+  `;
+}
+
+function bindChart(script) {
+  app.querySelector('[data-back]').addEventListener('click', () => go(`/${script.id}`));
 }
 
 function renderLearn(script, stage) {
@@ -405,7 +547,6 @@ function bindLearn(script, stage) {
   const deck = app.querySelector('[data-deck]');
   const prev = app.querySelector('#prev-card');
   const next = app.querySelector('#next-card');
-  const forced = stage.intro && !isTaught(script.id, stage.id);
 
   const show = (index) => {
     deck.dataset.index = String(index);
@@ -446,8 +587,25 @@ function renderQuiz(script, stage) {
   const prompt = promptText(correct, script.id);
   const chars = stageChars(script.id, stage);
   const mastered = stage.mix
-    ? `${quiz.mixSession.correct} / ${quiz.mixSession.answered} this review`
+    ? `${quiz.mixSession.correct} / ${quiz.mixSession.answered} this review · ${MIX_NEED}/${MIX_GOAL} to pass`
     : `${stageMasteredCount(script.id, stage)} / ${chars.length} mastered`;
+  const weak = stage.mix
+    ? []
+    : chars.filter((c) => masteryOf(script.id, c.char) < MASTER_PASS);
+  const weakLine = stage.mix
+    ? 'Keys A–F work too.'
+    : weak.length
+      ? `Still need: ${weak.map((c) => c.char).join(' ')} · keys A–F`
+      : 'All mastered · keys A–F';
+  const pips =
+    !stage.mix && chars.length <= 16
+      ? `<p class="pips">${chars
+          .map((c) => {
+            const m = masteryOf(script.id, c.char);
+            return `<span class="pip ${m >= MASTER_PASS ? 'is-on' : ''}" title="${escapeHtml(c.char)} ${m}"></span>`;
+          })
+          .join('')}</p>`
+      : '';
   const tiles = options
     .map((opt, i) => {
       const label = LABELS[i];
@@ -456,10 +614,15 @@ function renderQuiz(script, stage) {
         if (opt.char === correct.char) extra = 'is-right';
         else if (quiz.lastChoice === opt.char) extra = 'is-wrong';
       }
+      const reveal =
+        quiz.locked && opt.char === correct.char
+          ? `<span class="choice-read">${escapeHtml(correct.romaji)}</span>`
+          : '';
       return `
-        <button class="choice ${extra}" data-char="${escapeHtml(opt.char)}" ${quiz.locked ? 'disabled' : ''} type="button">
+        <button class="choice ${extra}" data-char="${escapeHtml(opt.char)}" ${quiz.locked ? 'disabled' : ''} type="button" aria-label="Option ${label}: ${escapeHtml(opt.char)}">
           <span class="choice-key">${label}</span>
           <span class="choice-glyph">${escapeHtml(opt.char)}</span>
+          ${reveal}
         </button>
       `;
     })
@@ -471,9 +634,10 @@ function renderQuiz(script, stage) {
       : `<p class="feedback no">The character for <strong>${escapeHtml(prompt.main)}</strong> is ${escapeHtml(correct.char)}</p>`
     : '<p class="feedback">&nbsp;</p>';
 
-  const nextBtn = quiz.locked && quiz.lastChoice !== correct.char
-    ? '<button class="btn primary" id="next-q" type="button">Next</button>'
-    : '';
+  const nextBtn =
+    quiz.locked && quiz.lastChoice !== correct.char
+      ? '<button class="btn primary" id="next-q" type="button">Next</button>'
+      : '';
 
   return `
     <header class="subhead">
@@ -481,6 +645,8 @@ function renderQuiz(script, stage) {
       <div>
         <p class="brand">${escapeHtml(script.label)} · ${escapeHtml(stage.title)}</p>
         <p class="quiz-progress">${mastered}</p>
+        ${pips}
+        <p class="prompt-sub">${escapeHtml(weakLine)}</p>
       </div>
     </header>
     <section class="prompt">
@@ -496,6 +662,7 @@ function renderQuiz(script, stage) {
 
 function bindQuiz(script, stage) {
   app.querySelector('[data-back]').addEventListener('click', () => {
+    window.clearTimeout(quizTimer);
     quiz = null;
     go(`/${script.id}`);
   });
@@ -519,31 +686,21 @@ function answer(script, stage, chosen) {
   if (ok) quiz.mixSession.correct += 1;
   persist();
   const passed = maybePassStage(script.id, stage, quiz.mixSession);
-  if (passed && !stage.mix) {
-    window.setTimeout(() => {
+  render();
+  if (passed) {
+    quizTimer = window.setTimeout(() => {
       quiz = null;
       go(`/${script.id}/${stage.id}/done`);
-    }, 650);
-    render();
-    return;
-  }
-  if (passed && stage.mix) {
-    window.setTimeout(() => {
-      quiz = null;
-      go(`/${script.id}/${stage.id}/done`);
-    }, 650);
-    render();
+    }, 700);
     return;
   }
   if (ok) {
-    render();
-    window.setTimeout(() => advance(script, stage), 650);
-    return;
+    quizTimer = window.setTimeout(() => advance(script, stage), 700);
   }
-  render();
 }
 
 function advance(script, stage) {
+  window.clearTimeout(quizTimer);
   if (maybePassStage(script.id, stage, quiz?.mixSession)) {
     quiz = null;
     go(`/${script.id}/${stage.id}/done`);
@@ -563,10 +720,11 @@ function renderDone(script, stage) {
     <header class="done-panel">
       <p class="brand">Stage passed</p>
       <h1>${escapeHtml(stage.title)}</h1>
-      <p class="lede">Those characters are in your browser profile. The next row unlocks when you want it.</p>
+      <p class="lede">Saved in this browser. Open the chart anytime to see what you know.</p>
       <div class="learn-actions">
         ${next ? `<button class="btn primary" data-next type="button">${escapeHtml(next.title)}</button>` : ''}
         <button class="btn ghost" data-again type="button">Practice this stage again</button>
+        <button class="btn ghost" data-chart type="button">Character chart</button>
         <button class="btn ghost" data-home type="button">All stages</button>
       </div>
     </header>
@@ -577,12 +735,12 @@ function bindDone(script, stage) {
   const stages = script.stages;
   const index = stages.findIndex((s) => s.id === stage.id);
   const next = stages[index + 1];
-  const again = app.querySelector('[data-again]');
-  again.addEventListener('click', () => {
+  app.querySelector('[data-again]').addEventListener('click', () => {
     quiz = startQuiz(script.id, stage);
     go(`/${script.id}/${stage.id}/quiz`);
   });
   app.querySelector('[data-home]').addEventListener('click', () => go(`/${script.id}`));
+  app.querySelector('[data-chart]').addEventListener('click', () => go(`/${script.id}/chart`));
   const nextBtn = app.querySelector('[data-next]');
   if (nextBtn && next) {
     nextBtn.addEventListener('click', () => go(`/${script.id}/${next.id}/learn`));
