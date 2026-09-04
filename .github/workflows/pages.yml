@@ -2,7 +2,9 @@ name: GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - cursor/kana-kanji-quiz-9b99
   workflow_dispatch:
 
 permissions:
